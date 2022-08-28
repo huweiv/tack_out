@@ -1,0 +1,56 @@
+.login_main_box {
+    padding: 30px; width:530px; height:410px;margin:12% auto 20px;
+    background: #FAFAFA; background: rgba(255,255,255,0.5); border: 1px #DDD solid;
+    border-radius: 10px;
+}
+.body_box {
+    background: url('../images/login/loginBg1.png') no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+.h_style {
+    text-align:center;
+    border-bottom: 1px dashed #c1c1c1;
+    color:#250d3f;
+    font-size:24px;
+    padding-bottom:20px;
+}
+
+.form_style {
+    padding-top:28px;
+    width:353px;margin:0 auto;
+    text-align: right;
+}
+
+.form_item_style {
+    margin-bottom:15px;
+    clear:both;*zoom:1
+}
+
+.input_style {
+    margin-left:0;
+    width:350px;
+    text-align: left;
+}
+
+.input_kaptcha_style {
+    margin-left:0;
+    width:235px;
+    text-align: left;
+}
+.kaptchaImg_style {
+    width: 110px;
+    height: 40px
+}
+.button_style {
+    width:350px;
+    background:#f6ac15 ;
+}
+
+.forgetPwd_main_box {
+    padding: 30px; width:530px; height:550px;margin:12% auto 20px;
+    background: #FAFAFA; background: rgba(255,255,255,0.5); border: 1px #DDD solid;
+    border-radius: 10px;
+}
