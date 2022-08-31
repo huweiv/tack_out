@@ -46,6 +46,7 @@ public class LoginCheckFilter implements Filter {
             filterChain.doFilter(request, response);
             return;
         }
+        log.info("requestURI{}", requestURI);
         //3-1.判断登录状态，已登录则放行
         Long empId = (Long) request.getSession().getAttribute("employee");
         if (empId != null) {

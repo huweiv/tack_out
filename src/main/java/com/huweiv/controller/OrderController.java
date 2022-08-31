@@ -7,6 +7,7 @@ import com.huweiv.common.R;
 import com.huweiv.dto.OrdersDto;
 import com.huweiv.entity.Orders;
 import com.huweiv.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/order")
+@Slf4j
 public class OrderController {
 
     @Autowired
@@ -44,5 +46,11 @@ public class OrderController {
     public R<Page> userPage(int page, int pageSize) {
         Page<OrdersDto> ordersDtoPage = orderService.getPage(page, pageSize);
         return R.success(ordersDtoPage);
+    }
+
+    @PostMapping("/again")
+    public R<String> again(@RequestBody Orders orders) {
+        orderService.again(orders);
+        return R.success("添加成功");
     }
 }

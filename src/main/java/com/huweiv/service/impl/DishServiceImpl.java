@@ -16,10 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +45,8 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
 
     @Autowired
     private DishFlavorService dishFlavorService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * @title saveWithFlavor
@@ -88,9 +93,8 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     public List<DishDto> getList(Dish dish) {
         LambdaQueryWrapper<Dish> lqw = new LambdaQueryWrapper<>();
         Long categoryId = dish.getCategoryId();
-        String name = dish.getName();
         lqw.eq(categoryId != null, Dish::getCategoryId, categoryId);
-        lqw.like(StringUtils.isNotEmpty(name), Dish::getName, name);
+        lqw.eq(dish.getStatus() != null, Dish::getStatus, dish.getStatus());
         lqw.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> dishList = dishMapper.selectList(lqw);
         List<DishDto> dishDtoList = dishList.stream().map((item) -> {

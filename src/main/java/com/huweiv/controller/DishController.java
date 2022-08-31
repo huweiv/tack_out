@@ -11,8 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +34,8 @@ public class DishController {
 
     @Autowired
     private DishService dishService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @GetMapping("/page")
     public R<Page> page(int page, int pageSize, String name) {
@@ -37,8 +44,11 @@ public class DishController {
     }
 
     @PostMapping
+    @CacheEvict(value = "dishCache", allEntries = true)
     public R<String> save(@RequestBody DishDto dishDto) {
         dishService.saveDishWithFlavor(dishDto);
+        String key = "dish_" + dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
         return R.success("新增成功");
     }
 
@@ -49,12 +59,14 @@ public class DishController {
     }
 
     @PutMapping
+    @CacheEvict(value = "dishCache", allEntries = true)
     public R<String> update(@RequestBody DishDto dishDto) {
         dishService.updateDishWithFlavor(dishDto);
         return R.success("修改成功");
     }
 
     @PostMapping("/status/{status}")
+    @CacheEvict(value = "dishCache", allEntries = true)
     public R<String> statusHandle(@PathVariable int status, @RequestParam List<Long> ids) {
         List<Dish> dishList = ids.stream().map((item) -> {
             Dish dish = new Dish();
@@ -67,6 +79,7 @@ public class DishController {
     }
 
     @DeleteMapping
+    @CacheEvict(value = "dishCache", allEntries = true)
     public R<String> delete(@RequestParam List<Long> ids) {
         dishService.removeDishWithFlavor(ids);
         return R.success("删除成功");
@@ -85,6 +98,7 @@ public class DishController {
 //    }
 
     @GetMapping("/list")
+    @Cacheable(value = "dishCache", key = "'dish_' + #dish.getCategoryId() + '_' + #dish.getStatus()")
     public R<List<DishDto>> list(Dish dish) {
         List<DishDto> dishDtoList = dishService.getList(dish);
         return R.success(dishDtoList);

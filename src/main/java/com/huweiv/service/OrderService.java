@@ -8,4 +8,5 @@ import com.huweiv.entity.Orders;
 public interface OrderService extends IService<Orders> {
     public void submit(Orders orders);
     public Page<OrdersDto> getPage(int page, int pageSize);
+    public void again(Orders orders);
 }

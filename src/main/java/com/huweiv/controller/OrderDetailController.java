@@ -1,7 +1,4 @@
 package com.huweiv.controller;
-
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.huweiv.common.R;
 import com.huweiv.dto.OrdersDto;
@@ -37,10 +34,7 @@ public class OrderDetailController {
 
     @PutMapping
     public R<String> editOrderDetail(@RequestBody Orders orders) {
-        LambdaUpdateWrapper<Orders> lqw = new LambdaUpdateWrapper<>();
-        lqw.eq(Orders::getId, orders.getId());
-        lqw.set(Orders::getStatus, orders.getStatus());
-        orderService.update(lqw);
+        orderService.updateById(orders);
         return R.success("操作成功");
     }
 }

@@ -10,10 +10,11 @@ import com.huweiv.entity.*;
 import com.huweiv.exception.BusinessException;
 import com.huweiv.mapper.AddressBookMapper;
 import com.huweiv.mapper.OrderMapper;
-import com.huweiv.mapper.ShoppingCartMapper;
 import com.huweiv.mapper.UserMapper;
 import com.huweiv.service.OrderDetailService;
 import com.huweiv.service.OrderService;
+import com.huweiv.service.ShoppingCartService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,10 +34,11 @@ import java.util.stream.Collectors;
  * @CreateTime 2022/8/28 11:01
  */
 @Service
+@Slf4j
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implements OrderService {
 
     @Autowired
-    private ShoppingCartMapper shoppingCartMapper;
+    private ShoppingCartService shoppingCartService;
     @Autowired
     private UserMapper userMapper;
     @Autowired
@@ -52,7 +54,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         Long currentId = BaseContext.getCurrentId();
         LambdaQueryWrapper<ShoppingCart> shoppingCartLambdaQueryWrapper = new LambdaQueryWrapper<>();
         shoppingCartLambdaQueryWrapper.eq(ShoppingCart::getUserId, currentId);
-        List<ShoppingCart> shoppingCartList = shoppingCartMapper.selectList(shoppingCartLambdaQueryWrapper);
+        List<ShoppingCart> shoppingCartList = shoppingCartService.list(shoppingCartLambdaQueryWrapper);
         if (shoppingCartList == null || shoppingCartList.size() == 0)
             throw  new BusinessException("购物车为空");
         User user = userMapper.selectById(currentId);
@@ -93,16 +95,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
                 + (addressBook.getDetail() == null ? "" : addressBook.getDetail()));
         orderMapper.insert(orders);
         orderDetailService.saveBatch(orderDetailList);
-        shoppingCartMapper.delete(shoppingCartLambdaQueryWrapper);
+        shoppingCartService.remove(shoppingCartLambdaQueryWrapper);
     }
 
     @Override
     public Page<OrdersDto> getPage(int page, int pageSize) {
-        Long currentId = BaseContext.getCurrentId();
-        User user = userMapper.selectById(currentId);
         Page<Orders> ordersPage = new Page<>(page, pageSize);
         LambdaQueryWrapper<Orders> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(Orders::getUserId, currentId);
+        lqw.eq(Orders::getUserId, BaseContext.getCurrentId());
         lqw.orderByDesc(Orders::getOrderTime);
         orderMapper.selectPage(ordersPage, lqw);
         Page<OrdersDto> ordersDtoPage = new Page<>();
@@ -111,14 +111,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         List<OrdersDto> ordersDtoList = ordersList.stream().map((item) -> {
             OrdersDto ordersDto = new OrdersDto();
             BeanUtils.copyProperties(item, ordersDto);
-            ordersDto.setUserName(user.getName());
-            AddressBook addressBook = addressBookMapper.selectById(item.getAddressBookId());
-            ordersDto.setConsignee(addressBook.getConsignee());
-            ordersDto.setPhone(addressBook.getPhone());
-            ordersDto.setAddress((addressBook.getProvinceName() == null ? "" : addressBook.getProvinceName())
-                    + (addressBook.getCityName() == null ? "" : addressBook.getCityName())
-                    + (addressBook.getDistrictName() == null ? "" : addressBook.getDistrictName())
-                    + (addressBook.getDetail() == null ? "" : addressBook.getDetail()));
             LambdaQueryWrapper<OrderDetail> orderDetailLambdaQueryWrapper = new LambdaQueryWrapper<>();
             orderDetailLambdaQueryWrapper.eq(OrderDetail::getOrderId, item.getId());
             List<OrderDetail> orderDetailList = orderDetailService.list(orderDetailLambdaQueryWrapper);
@@ -127,5 +119,33 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         }).collect(Collectors.toList());
         ordersDtoPage.setRecords(ordersDtoList);
         return ordersDtoPage;
+    }
+
+    @Override
+    public void again(Orders orders) {
+        LambdaQueryWrapper<OrderDetail> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(OrderDetail::getOrderId, orders.getId());
+        List<OrderDetail> orderDetailList = orderDetailService.list(lqw);
+        Long currentId = BaseContext.getCurrentId();
+        LambdaQueryWrapper<ShoppingCart> shoppingCartLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        shoppingCartLambdaQueryWrapper.eq(ShoppingCart::getUserId, currentId);
+        shoppingCartService.remove(shoppingCartLambdaQueryWrapper);
+        List<ShoppingCart> shoppingCartList = orderDetailList.stream().map((item) -> {
+            ShoppingCart shoppingCart = new ShoppingCart();
+            if (item.getDishId() != null)
+                shoppingCart.setDishId(item.getDishId());
+            if (item.getSetmealId() != null)
+                shoppingCart.setSetmealId(item.getSetmealId());
+            shoppingCart.setName(item.getName());
+            shoppingCart.setImage(item.getImage());
+            shoppingCart.setUserId(currentId);
+            shoppingCart.setDishFlavor(item.getDishFlavor());
+            shoppingCart.setNumber(item.getNumber());
+            shoppingCart.setAmount(item.getAmount());
+            shoppingCart.setCreateTime(LocalDateTime.now());
+            return shoppingCart;
+        }).collect(Collectors.toList());
+        log.info("shop{}", shoppingCartList.toString());
+        shoppingCartService.saveBatch(shoppingCartList);
     }
 }
